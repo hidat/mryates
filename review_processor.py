@@ -41,20 +41,28 @@ class Album:
 
     @staticmethod
     def isNameString(nameStr):
+        if len(nameStr) > 200:
+            return False
+
         # Checks if the string is in the format of [ALBUM] - [ARTIST CREDIT] ([LABEL])
         labelStart = nameStr.rfind('(')
         if labelStart <= 0:
             return False
 
-        # First try and split by the funky unicode 'en dash' that word likes to use
-        parts = nameStr[:(labelStart-1)].split(' \u2013 ')
-        if len(parts) == 1:
-            # Try splitting with ascii hyphen
-            parts = nameStr[:(labelStart-1)].split(' - ')
+        s = nameStr[:(labelStart-1)]
+        parts = s.split('- ')
+        if len(parts) > 1:
+            return True
 
-        if len(parts) == 1:
-            return False
-        return True
+        parts = s.split(' -')
+        if len(parts) > 1:
+            return True
+
+        parts = s.split(': ')
+        if len(parts) > 1:
+            return True
+
+        return False
 
     def parseNameString(self, nameStr):
         # Formatted as [ALBUM] - [ARTIST CREDIT] ([LABEL])
@@ -62,11 +70,12 @@ class Album:
         labelStart = nameStr.rfind('(')
         if labelStart > 0:
             self.label = nameStr[labelStart+1:-1]
-        # First try and split by the funky unicode 'en dash' that word likes to use
-        parts = nameStr[:(labelStart-1)].split(' \u2013 ')
+
+        parts = nameStr[:(labelStart-1)].split('- ')
         if len(parts) == 1:
-            # Try splitting with ascii hyphen
-            parts = nameStr[:(labelStart-1)].split(' - ')
+            parts = nameStr[:(labelStart-1)].split(' -')
+        if len(parts) == 1:
+            parts = nameStr[:(labelStart-1)].split(': ')
 
         if len(parts) == 1:
             self.name = parts[0]
@@ -76,9 +85,17 @@ class Album:
             if len(parts) > 2:
                 self.name += ' - ' + parts[2]
 
-
+    ###
+    # Parses a paragraph that we are expecting to be a 'review'
+    # This can be called multiple times (because sometimes we get newlines in the middle of a review).  Multiples lines
+    # are appended together.
+    ###
     def parseReviewString(self, reviewStr):
-        self.review = reviewStr
+        if self.review is None:
+            self.review = reviewStr
+        else:
+            self.review += ' ' + reviewStr
+
         sentences = reviewStr.split('.')
         if len(sentences) > 2:
             self.reviewedBy = sentences[-1]
@@ -143,9 +160,10 @@ class DirectoryProcessor:
             currentRotation = None
 
             album = None
+            lastAlbum = None
 
             for p in paras:
-                s = p[:-4].rstrip().replace(u'\xa0', ' ')
+                s = p[:-4].rstrip().replace(u'\xa0', ' ').replace(u'\u2013', '-')
                 if len(s) > 0:
                     if len(s) < 10:
                         # Check to make sure this isn't a random <br /> or other html
@@ -159,9 +177,14 @@ class DirectoryProcessor:
                             if Album.isNameString(s):
                                 album = Album(filename, currentRotation)
                                 album.parseNameString(s)
+                                lastAlbum = None
+                            elif not (lastAlbum is None):
+                                # did somebody put a newline in the middle of a review? Try to add it to the last album
+                                lastAlbum.parseReviewString(s)
                         else:
                             album.parseReviewString(s)
                             self.albums.append(album)
+                            lastAlbum = album
                             album = None
 
     def processDirectory(self):
@@ -185,6 +208,7 @@ class DirectoryProcessor:
         file.close()
 
 dp = DirectoryProcessor("reviews_2015")
+#dp = DirectoryProcessor("problems")
 dp.processDirectory()
 dp.exportAlbums('reviews_2015.txt')
 
