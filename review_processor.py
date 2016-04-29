@@ -195,9 +195,10 @@ class DirectoryProcessor:
             else:
                 path = ''
             for src_name in files:
-                file_name = os.path.join(root, src_name)
-                print(src_name)
-                self.processFile(file_name)
+                if src_name[-4:].lower() == 'docx' and src_name[:1] != '~':
+                    file_name = os.path.join(root, src_name)
+                    print(src_name)
+                    self.processFile(file_name)
 
     def exportAlbums(self, targetFilename):
         file = open(targetFilename, "w", encoding='utf-8')
