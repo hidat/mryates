@@ -207,8 +207,19 @@ class DirectoryProcessor:
             file.write('\n')
         file.close()
 
-dp = DirectoryProcessor("reviews_2015")
-#dp = DirectoryProcessor("problems")
-dp.processDirectory()
-dp.exportAlbums('reviews_2015.txt')
+def main():
+    parser = argparse.ArgumentParser(description='Processes a KEXP weekly review documents into a spreadsheet.')
+    parser.add_argument('input_directory', help="Directory containing one or more docx files to process.")
+    parser.add_argument('output_file', help="Name of the tab-delimited file to store the results in.")
+    #parser.add_argument('-d', '--delete', default=False, const=True, nargs='?', help="Delete audio files from input_directory after processing")
+
+    args = parser.parse_args()
+
+    dp = DirectoryProcessor(args.input_directory)
+    dp.processDirectory()
+    dp.exportAlbums(args.output_file)
+
+
+if __name__ == "__main__":
+    main()
 
