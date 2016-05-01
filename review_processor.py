@@ -112,45 +112,55 @@ class Album:
                 else:
                     self.oneStarTracks.append(track)
 
-class DirectoryProcessor:
-    def __init__(self, directoryPath):
-        self.directoryPath = directoryPath
-        self.albums = []
-
-    @staticmethod
-    def printAlbum(album):
-        print("\n%s: %s by [%s] (on %s) - %s" %(album.rotation, album.name, album.artistCredit, album.label, album.review))
-        print("Reviewed by: %s.  Tracks to try: %s" % (album.reviewedBy, album.trackList))
-        for t in album.tracks:
+    def print(self):
+        print("\n%s: %s by [%s] (on %s) - %s" %(self.rotation, self.name, self.artistCredit, self.label, self.review))
+        print("Reviewed by: %s.  Tracks to try: %s" % (self.reviewedBy, self.trackList))
+        for t in self.tracks:
             print("%s: %d" % (t.trackNum, t.stars))
 
-    def exportAlbum(self, album):
+    def formatCSV(self):
         oneStar = ''
-        for t in album.oneStarTracks:
+        for t in self.oneStarTracks:
             if not (t.trackNum is None):
                 if oneStar > '':
                     oneStar += ', '
                 oneStar += str(t.trackNum)
 
         twoStar = ''
-        for t in album.twoStarTracks:
+        for t in self.twoStarTracks:
             if not (t.trackNum is None):
                 if twoStar > '':
                     twoStar += ', '
                 twoStar += str(t.trackNum)
 
         threeStar = ''
-        for t in album.threeStarTracks:
+        for t in self.threeStarTracks:
             if not (t.trackNum is None):
                 if threeStar > '':
                     threeStar += ', '
                 threeStar += str(t.trackNum)
 
-        s = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (album.filename, album.rotation, album.artistCredit, album.name, album.label, album.review, oneStar, twoStar, threeStar)
+        s = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (self.filename, self.rotation, self.artistCredit, self.name, self.label, self.review, oneStar, twoStar, threeStar)
         return s
+    
+class FileProcessor:
+    def __init__(self, filename):
+        self.filename = filename
+        self.albums = []
 
+    def process(self):
+        FileProcessor.processFile(self.filename, self.albums)
 
-    def processFile(self, filename):
+    def exportAlbums(self, targetFilename):
+        file = open(targetFilename, "w", encoding='utf-8')
+        for a in self.albums:
+            s = a.formatCSV()
+            file.write(s)
+            file.write('\n')
+        file.close()
+
+    @staticmethod
+    def processFile(filename, albums):
         style_map = "u => em"
 
         with open(filename, "rb") as docx_file:
@@ -183,9 +193,16 @@ class DirectoryProcessor:
                                 lastAlbum.parseReviewString(s)
                         else:
                             album.parseReviewString(s)
-                            self.albums.append(album)
+                            albums.append(album)
                             lastAlbum = album
                             album = None
+
+
+class DirectoryProcessor:
+    def __init__(self, directoryPath):
+        self.directoryPath = directoryPath
+        self.albums = []
+
 
     def processDirectory(self):
         path_start = len(self.directoryPath) + 1
@@ -198,27 +215,32 @@ class DirectoryProcessor:
                 if src_name[-4:].lower() == 'docx' and src_name[:1] != '~':
                     file_name = os.path.join(root, src_name)
                     print(src_name)
-                    self.processFile(file_name)
+                    FileProcessor.processFile(file_name, self.albums)
 
     def exportAlbums(self, targetFilename):
         file = open(targetFilename, "w", encoding='utf-8')
         for a in self.albums:
-            s = self.exportAlbum(a)
+            s = a.formatCSV()
             file.write(s)
             file.write('\n')
         file.close()
 
 def main():
     parser = argparse.ArgumentParser(description='Processes a KEXP weekly review documents into a spreadsheet.')
-    parser.add_argument('input_directory', help="Directory containing one or more docx files to process.")
-    parser.add_argument('output_file', help="Name of the tab-delimited file to store the results in.")
+    parser.add_argument('input_directory', help="Directory or file to process.  Only docx files are will be processed.")
+    parser.add_argument('output_file', help="Name for the tab-delimited file that will be created to store the results in.")
     #parser.add_argument('-d', '--delete', default=False, const=True, nargs='?', help="Delete audio files from input_directory after processing")
 
     args = parser.parse_args()
 
-    dp = DirectoryProcessor(args.input_directory)
-    dp.processDirectory()
-    dp.exportAlbums(args.output_file)
+    if os.path.isfile(args.input_directory):
+        fp = FileProcessor(args.input_directory)
+        fp.process()
+        fp.exportAlbums(args.output_file)
+    else:
+        dp = DirectoryProcessor(args.input_directory)
+        dp.processDirectory()
+        dp.exportAlbums(args.output_file)
 
 
 if __name__ == "__main__":
