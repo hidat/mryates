@@ -173,29 +173,31 @@ class FileProcessor:
             lastAlbum = None
 
             for p in paras:
-                s = p[:-4].rstrip().replace(u'\xa0', ' ').replace(u'\u2013', '-')
-                if len(s) > 0:
-                    if len(s) < 10:
-                        # Check to make sure this isn't a random <br /> or other html
-                        if s[0] != '<':
-                            currentRotation = s[:-1].rstrip()
-                            albumName = None
-                            albumReview = None
-                            waitingForAlbum = True
-                    else:
-                        if album is None:
-                            if Album.isNameString(s):
-                                album = Album(filename, currentRotation)
-                                album.parseNameString(s)
-                                lastAlbum = None
-                            elif not (lastAlbum is None):
-                                # did somebody put a newline in the middle of a review? Try to add it to the last album
-                                lastAlbum.parseReviewString(s)
+                s = p[:-4].strip()
+                s = s.replace(u'\xa0', ' ').replace(u'\u2013', '-')
+                if len(s) > 0 and s[0] != '<':
+                    if len(s) > 0:
+                        if len(s) < 10:
+                            s = s[:-1].rstrip()
+                            if s=='H' or s=='M' or s=='L' or s=='R/N':
+                                currentRotation = s
+                                albumName = None
+                                albumReview = None
+                                waitingForAlbum = True
                         else:
-                            album.parseReviewString(s)
-                            albums.append(album)
-                            lastAlbum = album
-                            album = None
+                            if album is None:
+                                if Album.isNameString(s):
+                                    album = Album(filename, currentRotation)
+                                    album.parseNameString(s)
+                                    lastAlbum = None
+                                elif not (lastAlbum is None):
+                                    # did somebody put a newline in the middle of a review? Try to add it to the last album
+                                    lastAlbum.parseReviewString(s)
+                            else:
+                                album.parseReviewString(s)
+                                albums.append(album)
+                                lastAlbum = album
+                                album = None
 
 
 class DirectoryProcessor:
