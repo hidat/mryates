@@ -140,9 +140,10 @@ class Album:
                 threeStar += str(t.trackNum)
 
         decodedReview = html.unescape(self.review)
+        textReview = re.sub("<.*?>", "", decodedReview)
+        decodedReview = decodedReview.replace("em>", "u>").replace("strong>", "b>")
         encodedReview = html.escape(decodedReview, False)
-        decodedReview = re.sub("<.*?>", "", decodedReview)
-        s = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (self.filename, self.rotation, self.artistCredit, self.name, self.label, decodedReview, encodedReview, oneStar, twoStar, threeStar)
+        s = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (self.filename, self.rotation, self.artistCredit, self.name, self.label, textReview, encodedReview, oneStar, twoStar, threeStar)
         return s
     
 class FileProcessor:
