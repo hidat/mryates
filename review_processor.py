@@ -3,6 +3,7 @@ import re
 import os
 import argparse
 import unicodedata
+import html
 
 
 class Track:
@@ -51,16 +52,13 @@ class Album:
             return False
 
         s = nameStr[:(labelStart-1)]
-        parts = s.split('- ')
-        if len(parts) > 1:
+        if s.find('- ') > -1:
             return True
 
-        parts = s.split(' -')
-        if len(parts) > 1:
+        if s.find(' -') > -1:
             return True
 
-        parts = s.split(': ')
-        if len(parts) > 1:
+        if s.find(': ') > -1:
             return True
 
         return False
@@ -141,7 +139,10 @@ class Album:
                     threeStar += ', '
                 threeStar += str(t.trackNum)
 
-        s = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (self.filename, self.rotation, self.artistCredit, self.name, self.label, self.review, oneStar, twoStar, threeStar)
+        decodedReview = html.unescape(self.review)
+        encodedReview = html.escape(decodedReview, False)
+        decodedReview = re.sub("<.*?>", "", decodedReview)
+        s = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (self.filename, self.rotation, self.artistCredit, self.name, self.label, decodedReview, encodedReview, oneStar, twoStar, threeStar)
         return s
     
 class FileProcessor:
@@ -176,7 +177,7 @@ class FileProcessor:
             for p in paras:
                 s = p[:-4].strip()
                 #s = s.replace(u'\xa0', ' ').replace(u'\u2013', '-')
-                s = unicodedata.normalize('NFKC', s)
+                s = unicodedata.normalize('NFKC', s).replace(u'\u2013', '-')
                 if len(s) > 0 and s[0] != '<':
                     if len(s) > 0:
                         if len(s) < 10:
