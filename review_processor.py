@@ -249,6 +249,8 @@ class DirectoryProcessor:
     def exportAlbums(self, targetFilename):
         file = open(targetFilename, "w", encoding='utf-8')
         sortedAlbums = sorted(self.albums, key=operator.attrgetter('filename', 'rotation', 'name'))
+        header = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ('Current Rotation', 'Review Title', 'Review', 'Dalet Review', 'Reviewed By', 'One Star', 'Two Star', 'Three Star', 'Filename', 'Artist Credit', 'Label')
+        file.write(header)
         for a in sortedAlbums:
             s = a.formatCSV()
             file.write(s)
