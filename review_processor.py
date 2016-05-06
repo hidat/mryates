@@ -4,6 +4,7 @@ import os
 import argparse
 import unicodedata
 import html
+import operator
 
 
 class Track:
@@ -26,6 +27,7 @@ class Track:
 
 class Album:
     reTrackSplit = re.compile(r",|&amp;")
+    reReviewer = re.compile(r"[-]+([\w\s]+)")
 
     def __init__(self, filename, rotation):
         self.filename = filename
@@ -36,7 +38,7 @@ class Album:
         self.review = None
         self.trackList = None
         self.tracks = None
-        self.reviewedBy = None
+        self.reviewedBy = ''
         self.oneStarTracks = []
         self.twoStarTracks = []
         self.threeStarTracks = []
@@ -96,20 +98,40 @@ class Album:
             self.review += ' ' + reviewStr
 
         sentences = reviewStr.split('.')
-        if len(sentences) > 2:
-            self.reviewedBy = sentences[-1]
-            self.trackList = sentences[-2]
-            self.tracks = []
-            rawTracks = self.reTrackSplit.split(self.trackList)
-            for t in rawTracks:
-                track = Track(t)
-                self.tracks.append(track)
-                if track.stars == 3:
-                    self.threeStarTracks.append(track)
-                elif track.stars == 2:
-                    self.twoStarTracks.append(track)
-                else:
-                    self.oneStarTracks.append(track)
+        tl = None
+        rb = None
+        if len(sentences) > 1:
+            rb = sentences[-1].strip()
+            if rb.startswith('-'):
+                rm = self.reReviewer.findall(rb)
+                if len(rm) > 0:
+                    self.reviewedBy = rm[0]
+            elif rb.startswith('Try'):
+                parts = rb.split('-')
+                if len(parts) > 1:
+                    tl = parts[0]
+                    rm = self.reReviewer.findall(rb)
+                    if len(rm) > 0:
+                        self.reviewedBy = rm[0]
+            else:
+                rb = None
+
+        if tl is None and len(sentences) > 2:
+            tl = sentences[-2].strip()
+        if (not (tl is None)) and tl.startswith('Try'):
+                self.trackList = tl
+
+                self.tracks = []
+                rawTracks = self.reTrackSplit.split(self.trackList)
+                for t in rawTracks:
+                    track = Track(t)
+                    self.tracks.append(track)
+                    if track.stars == 3:
+                        self.threeStarTracks.append(track)
+                    elif track.stars == 2:
+                        self.twoStarTracks.append(track)
+                    else:
+                        self.oneStarTracks.append(track)
 
     def print(self):
         print("\n%s: %s by [%s] (on %s) - %s" %(self.rotation, self.name, self.artistCredit, self.label, self.review))
@@ -143,7 +165,7 @@ class Album:
         textReview = re.sub("<.*?>", "", decodedReview)
         decodedReview = decodedReview.replace("em>", "u>").replace("strong>", "b>")
         encodedReview = html.escape(decodedReview, False)
-        s = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (self.filename, self.rotation, self.artistCredit, self.name, self.label, textReview, encodedReview, oneStar, twoStar, threeStar)
+        s = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (self.rotation, self.name, textReview, encodedReview, self.reviewedBy, oneStar, twoStar, threeStar, self.filename, self.artistCredit, self.label)
         return s
     
 class FileProcessor:
@@ -156,7 +178,8 @@ class FileProcessor:
 
     def exportAlbums(self, targetFilename):
         file = open(targetFilename, "w", encoding='utf-8')
-        for a in self.albums:
+        sortedAlbums = sorted(self.albums, key=operator.attrgetter('filename', 'rotation', 'name'))
+        for a in sortedAlbums:
             s = a.formatCSV()
             file.write(s)
             file.write('\n')
@@ -225,7 +248,8 @@ class DirectoryProcessor:
 
     def exportAlbums(self, targetFilename):
         file = open(targetFilename, "w", encoding='utf-8')
-        for a in self.albums:
+        sortedAlbums = sorted(self.albums, key=operator.attrgetter('filename', 'rotation', 'name'))
+        for a in sortedAlbums:
             s = a.formatCSV()
             file.write(s)
             file.write('\n')
