@@ -67,7 +67,9 @@ class Album:
 
     def parseNameString(self, nameStr):
         # Formatted as [ALBUM] - [ARTIST CREDIT] ([LABEL])
-        nameStr = nameStr.replace("&amp;", '&')
+        nameStr = html.unescape(nameStr)
+        nameStr = re.sub("<.*?>", "", nameStr)
+        #nameStr = nameStr.replace("&amp;", '&')
         labelStart = nameStr.rfind('(')
         if labelStart > 0:
             self.label = nameStr[labelStart+1:-1]
