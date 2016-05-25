@@ -119,6 +119,7 @@ class DocParser:
 
     def process(self):
         DocParser.processFile(self.filename, self.reviews)
+        return self.reviews
 
     def exportAlbums(self, targetFilename):
         file = open(targetFilename, "w", encoding='utf-8')
