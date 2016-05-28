@@ -32,7 +32,7 @@ class DaletSerializer:
                 with tag('ItemCode'):
                     text(release.mbID)
                 with tag('KEXPReviewRich'):
-                    text(release.daletReview)
+                    text(release.review)
         formatted_data = indent(doc.getvalue())
 
         output_file = path.join(output_dir, 'r' + release.mbID + ".xml")
