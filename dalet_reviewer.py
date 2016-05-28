@@ -23,13 +23,21 @@ def getMbIdFromUser(review):
 
 def printReviews(reviews):
     foundCount = 0
+    missingCount = 0
+    missing = []
     for review in reviews:
         mbID = review.mbID
         if mbID is None:
-            mbID = '***** MISSING *****'
+            missingCount += 1
+            missing.append(review)
         else:
             foundCount += 1
-        print("Please enter the MBID for '%s' by %s: " % (review.name, review.artistCredit), mbID)
+            print("'%s' by %s: %s" % (review.name, review.artistCredit, mbID))
+
+    if missingCount > 0:
+        print('\nReviews missing MusicBrainz IDs:')
+        for review in missing:
+            print("    '%s' by %s" % (review.name, review.artistCredit))
 
     return foundCount
 
@@ -78,12 +86,12 @@ def main():
         foundCount = printReviews(mergedReviews)
         missingCount = len(mergedReviews) - foundCount
         if missingCount > 0:
-            ans = input("There are %s reviews missing MusicBrainz IDs, would you like to enter them now? [Y]n: " % (missingCount))
+            ans = input("Would you like to enter missing MusicBrainz IDs now? [Y]n: ")
             if ans.lower() == 'y' or ans == '':
                 missingCount = fillInMissingReviews(reviews)
         doExport = missingCount == 0
         if missingCount > 0:
-            ans = input("There are %s reviews missing MusicBrainz IDs, would you like to enter them now? y[N]: "  % (missingCount))
+            ans = input("There are still %s reviews missing MusicBrainz IDs, would you like to export to Dalet amyway? y[N]: "  % (missingCount))
             if ans.lower() == 'y':
                 doExport = True
         if doExport:
