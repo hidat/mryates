@@ -85,12 +85,13 @@ def main():
     argParser = argparse.ArgumentParser(description='Processes a KEXP weekly review documents and generate Dalet review import.')
     argParser.add_argument('input_file', help="Word document to process.  Only docx files are supported.")
     argParser.add_argument('-k', '--api_key', help="Your Smartsheet API Key")
-    argParser.add_argument('-d', '--directory', default="dalet", help="Directory to put Dalet Impex files in.")
+    argParser.add_argument('-d', '--dalet', help="Directory to put Dalet Impex files in.")
     argParser.add_argument('-w', '--worksheet', help="Smartsheet Worksheet ID that contains the reviews associated MusicBrainz ID's")
 
     args = argParser.parse_args()
     apiKey = None
     sheetId = None
+    daletDirectory = 'dalet'
     configFileName = 'review_parser.yml'
     if os.path.isfile(configFileName):
         config = yaml.safe_load(open(configFileName))
@@ -108,6 +109,13 @@ def main():
             apiKey = config['api_key']
     else:
         apiKey = args.api_key
+
+    if args.dalet is None:
+        if 'dalet_directory' in config:
+            daletDirectory = config['dalet_directory']
+    else:
+        daletDirectory = args.dalet
+
 
     if apiKey is None:
         print("No API key provided.  Please specify your Smartsheet API key using the '-k' option, or set it in your 'review_parser.yml' file.")
@@ -136,7 +144,7 @@ def main():
             if ans.lower() == 'y':
                 doExport = True
         if doExport:
-            exportCount = exportReviews(mergedReviews, args.directory)
+            exportCount = exportReviews(mergedReviews, daletDirectory)
         print("%s reviews found, %s updated in Dalet" %(len(mergedReviews), exportCount))
     else:
         print(args.input_file + " does not appear to be a valid file.")
