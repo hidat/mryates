@@ -3,14 +3,30 @@ import argparse
 from rlib import parser, ssheet, serializer
 import yaml
 
-
+###
+# Find Release
+# Attempts to find the given review in the releases read from Smartsheet
+# First looks for an exact match on title.  If no match is found, then looks at artist.  If there is a match on artist,
+# and that artist only appears once, then uses that release.
+###
 def findRelease(review,  releases):
     # First try to find by title
-    titleToFind = review.name.lower()
+    titleToFind = review.name.casefold()
     for release in releases:
-        if release.title.lower() == titleToFind:
+        if release.normalizedTitle == titleToFind:
             return release
-    return None
+
+    # Not found on title, try to find artist
+    artistRelease = None
+    artistToFind = review.artistCredit.casefold()
+    for release in releases:
+        if release.normalizedArtist == artistToFind:
+            if artistRelease is None:
+                artistRelease = release
+            else:
+                return None  #Found multiple, bail out with nothing!
+
+    return artistRelease
 
 def mergeReviewsAndReleases(reviews, releases):
     for review in reviews:
@@ -73,18 +89,27 @@ def main():
     argParser.add_argument('-w', '--worksheet', help="Smartsheet Worksheet ID that contains the reviews associated MusicBrainz ID's")
 
     args = argParser.parse_args()
-    config = yaml.safe_load(open('review_parser.yml'))
+    apiKey = None
+    sheetId = None
+    configFileName = 'review_parser.yml'
+    if os.path.isfile(configFileName):
+        config = yaml.safe_load(open(configFileName))
+    else:
+        config = {}
+
     if args.worksheet is None:
-        sheetId = config['worksheet']
+        if 'worksheet' in config:
+            sheetId = config['worksheet']
     else:
         sheetId = args.worksheet
 
     if args.api_key is None:
-        api_key = config['api_key']
+        if 'api_key' in config:
+            apiKey = config['api_key']
     else:
-        api_key = args.api_key
+        apiKey = args.api_key
 
-    if api_key is None:
+    if apiKey is None:
         print("No API key provided.  Please specify your Smartsheet API key using the '-k' option, or set it in your 'review_parser.yml' file.")
         return
 
@@ -94,7 +119,7 @@ def main():
 
     if os.path.isfile(args.input_file):
         exportCount = 0
-        sdk = ssheet.SDK(api_key)
+        sdk = ssheet.SDK(apiKey)
         fp = parser.DocParser(args.input_file)
         reviews = fp.process()
         releases = sdk.readWeeklySheet(sheetId)
@@ -118,3 +143,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    input("Press the [ENTER] key to finish....")
