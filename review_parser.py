@@ -1,6 +1,8 @@
 import os
 import argparse
 from rlib import parser, ssheet, serializer
+import yaml
+
 
 def findRelease(review,  releases):
     # First try to find by title
@@ -53,32 +55,46 @@ def fillInMissingReviews(reviews):
     return missingCount
 
 def exportReviews(reviews, outputDirectory):
-    errorCount = 0
+    exportCount = 0
     fp = serializer.DaletSerializer(outputDirectory)
     for review in reviews:
         if review.mbID is not None and review.mbID > '':
             fp.saveRelease(review)
-        else:
-            errorCount+=1
-    return errorCount
+            exportCount += 1
+
+    return exportCount
 
 
 def main():
     argParser = argparse.ArgumentParser(description='Processes a KEXP weekly review documents and generate Dalet review import.')
     argParser.add_argument('input_file', help="Word document to process.  Only docx files are supported.")
-    argParser.add_argument('api_key', help="Your Smartsheet API Key")
+    argParser.add_argument('-k', '--api_key', help="Your Smartsheet API Key")
     argParser.add_argument('-d', '--directory', default="dalet", help="Directory to put Dalet Impex files in.")
     argParser.add_argument('-w', '--worksheet', help="Smartsheet Worksheet ID that contains the reviews associated MusicBrainz ID's")
 
     args = argParser.parse_args()
+    config = yaml.safe_load(open('review_parser.yml'))
+    if args.worksheet is None:
+        sheetId = config['worksheet']
+    else:
+        sheetId = args.worksheet
+
+    if args.api_key is None:
+        api_key = config['api_key']
+    else:
+        api_key = args.api_key
+
+    if api_key is None:
+        print("No API key provided.  Please specify your Smartsheet API key using the '-k' option, or set it in your 'review_parser.yml' file.")
+        return
+
+    if sheetId is None:
+        print("No worksheet ID provided.  Please specify the Smartsheet worksheet ID by using the '-w' option, or set it in your 'review_parser.yml' file.")
+        return
 
     if os.path.isfile(args.input_file):
-        if args.worksheet is None:
-            sheetId = '3416095957772164'
-        else:
-            sheetId = args.worksheet
-
-        sdk = ssheet.SDK(args.api_key)
+        exportCount = 0
+        sdk = ssheet.SDK(api_key)
         fp = parser.DocParser(args.input_file)
         reviews = fp.process()
         releases = sdk.readWeeklySheet(sheetId)
@@ -95,7 +111,8 @@ def main():
             if ans.lower() == 'y':
                 doExport = True
         if doExport:
-            exportReviews(mergedReviews, args.directory)
+            exportCount = exportReviews(mergedReviews, args.directory)
+        print("%s reviews found, %s updated in Dalet" %(len(mergedReviews), exportCount))
     else:
         print(args.input_file + " does not appear to be a valid file.")
 
