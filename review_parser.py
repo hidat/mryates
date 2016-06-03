@@ -125,11 +125,17 @@ def main():
         print("No worksheet ID provided.  Please specify the Smartsheet worksheet ID by using the '-w' option, or set it in your 'review_parser.yml' file.")
         return
 
+    reviews= []
     if os.path.isfile(args.input_file):
-        exportCount = 0
-        sdk = ssheet.SDK(apiKey)
         fp = parser.DocParser(args.input_file)
         reviews = fp.process()
+    elif os.path.isdir(args.input_file):
+        fp = parser.DirectoryParser(args.input_file)
+        reviews = fp.process()
+
+    if len(reviews) > 0:
+        exportCount = 0
+        sdk = ssheet.SDK(apiKey)
         releases = sdk.readWeeklySheet(sheetId)
         mergedReviews = mergeReviewsAndReleases(reviews, releases)
         foundCount = printReviews(mergedReviews)

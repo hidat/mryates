@@ -4,6 +4,7 @@ import operator
 import mammoth
 import html
 import csv
+import os
 from .review import Review
 from .track import Track
 
@@ -209,3 +210,22 @@ class CSVFile:
                 firstLine = False
     
         return reviews
+
+class DirectoryParser:
+    def __init__(self, directoryPath):
+        self.directoryPath = directoryPath
+        self.reviews = []
+
+    def process(self):
+        path_start = len(self.directoryPath) + 1
+        for root, dir, files in os.walk(self.directoryPath):
+            if len(root) > path_start:
+                path = root[path_start:]
+            else:
+                path = ''
+            for src_name in files:
+                if src_name[-4:].lower() == 'docx' and src_name[:1] != '~':
+                    file_name = os.path.join(root, src_name)
+                    print(src_name)
+                    DocParser.processFile(file_name, self.reviews)
+        return self.reviews
