@@ -27,6 +27,8 @@ class DaletSerializer:
         doc.asis('<?xml version="1.0" encoding="UTF-8"?>')
         with tag('Titles'):
             with tag('GlossaryValue'):
+                with tag('GlossaryType'):
+                    text('Release')
                 with tag('Key1'):
                     text(release.mbID)
                 with tag('ItemCode'):
