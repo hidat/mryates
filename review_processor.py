@@ -1,7 +1,7 @@
 import os
 import argparse
 import operator
-from rlib import parser
+from review_parser import parser
 
 
 class DirectoryProcessor:

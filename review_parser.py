@@ -1,6 +1,6 @@
 import os
 import argparse
-from rlib import parser, ssheet, serializer
+from review_parser import parser, ssheet, serializer
 import yaml
 
 ###

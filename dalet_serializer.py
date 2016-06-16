@@ -2,7 +2,7 @@ __author__ = 'hidat'
 
 import os
 import argparse
-from rlib import parser, serializer
+from review_parser import parser, serializer
 
 def main():
     argParser = argparse.ArgumentParser(description='Processes a KEXP weekly review documents into a spreadsheet.')
